@@ -33,7 +33,7 @@ The following is supported:
 
 ## Performance
 
-Here is a result of the [Benchmark test](https://github.com/servicetitan/lazy-proxy-unity/blob/master/LazyProxy.Unity.Tests/UnityExtensionBenchmark.cs)
+Here is a result of the [Benchmark test](https://github.com/servicetitan/lazy-proxy-unity/blob/master/LazyProxy.Unity.Benchmarks/UnityExtensionBenchmark.cs)
 
 ```
 BenchmarkDotNet=v0.10.14, OS=Windows 10.0.17134
