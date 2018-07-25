@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Version>0.1.0</Version>
+    <PackageId>LazyProxy.Unity</PackageId>
+    <Company>ServiceTitan, Inc.</Company>
+    <Authors>ServiceTitan, Inc.</Authors>
+    <Copyright>Copyright 2018 ServiceTitan, Inc.</Copyright>
+    <PackageProjectUrl>https://github.com/servicetitan/lazy-proxy-unity</PackageProjectUrl>
+    <PackageLicenseUrl>https://github.com/servicetitan/lazy-proxy-unity/blob/master/LICENSE</PackageLicenseUrl>
+    <RepositoryUrl>https://github.com/servicetitan/lazy-proxy-unity</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>unity container lazy injection proxy dynamic runtime wrapper</PackageTags>
+    <Description>Lazy injection for Unity container</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="LazyProxy" Version="0.1.0" />
+    <PackageReference Include="Unity" Version="5.8.6" />
+  </ItemGroup>
+</Project>
