@@ -222,5 +222,58 @@ namespace LazyProxy.Unity.Tests
 
             Assert.Null(exception);
         }
+
+        [Fact]
+        public void ServicesMustBeResolvedByNameWithCorrectLifetime()
+        {
+            const string serviceName1 = "serviceName1";
+            const string serviceName2 = "serviceName2";
+
+            var container = new UnityContainer()
+                .RegisterLazy<IService1, Service1>(serviceName1, () => new ContainerControlledLifetimeManager())
+                .RegisterLazy<IService1, Service1>(serviceName2, () => new HierarchicalLifetimeManager());
+
+            var childContainer = container.CreateChildContainer();
+
+            Assert.Throws<ResolutionFailedException>(() => container.Resolve<IService1>());
+            Assert.Same(container.Resolve<IService1>(serviceName1), container.Resolve<IService1>(serviceName1));
+            Assert.Same(container.Resolve<IService1>(serviceName2), container.Resolve<IService1>(serviceName2));
+            Assert.NotSame(container.Resolve<IService1>(serviceName1), container.Resolve<IService1>(serviceName2));
+
+            Assert.Throws<ResolutionFailedException>(() => childContainer.Resolve<IService1>());
+            Assert.Same(childContainer.Resolve<IService1>(serviceName1), childContainer.Resolve<IService1>(serviceName1));
+            Assert.Same(childContainer.Resolve<IService1>(serviceName2), childContainer.Resolve<IService1>(serviceName2));
+
+            Assert.NotSame(childContainer.Resolve<IService1>(serviceName1), childContainer.Resolve<IService1>(serviceName2));
+            Assert.Same(container.Resolve<IService1>(serviceName1), childContainer.Resolve<IService1>(serviceName1));
+            Assert.NotSame(container.Resolve<IService1>(serviceName2), childContainer.Resolve<IService1>(serviceName2));
+        }
+
+        [Fact]
+        public void ServicesMustBeResolvedByNameWithCorrectInjectionMembers()
+        {
+            const string arg = "arg";
+            const string result1 = "result1";
+            const string result2 = "result2";
+            const string serviceName1 = "serviceName1";
+            const string serviceName2 = "serviceName2";
+
+            var serviceMock1 = new Mock<IService2>(MockBehavior.Strict);
+            serviceMock1.Setup(s => s.Method(arg)).Returns(result1);
+
+            var serviceMock2 = new Mock<IService2>(MockBehavior.Strict);
+            serviceMock2.Setup(s => s.Method(arg)).Returns(result2);
+
+            var container = new UnityContainer()
+                .RegisterLazy<IService1, Service1>(serviceName1, new InjectionConstructor(serviceMock1.Object))
+                .RegisterLazy<IService1, Service1>(serviceName2, new InjectionConstructor(serviceMock2.Object));
+
+            var actualResult1 = container.Resolve<IService1>(serviceName1).MethodWithOtherServiceInvocation(arg);
+            var actualResult2 = container.Resolve<IService1>(serviceName2).MethodWithOtherServiceInvocation(arg);
+
+            Assert.Throws<ResolutionFailedException>(() => container.Resolve<IService1>());
+            Assert.Equal("service1->" + result1, actualResult1);
+            Assert.Equal("service1->" + result2, actualResult2);
+        }
     }
 }
