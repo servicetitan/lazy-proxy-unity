@@ -14,7 +14,7 @@
     <Description>Lazy injection for Unity container</Description>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="LazyProxy" Version="0.1.0" />
+    <PackageReference Include="LazyProxy" Version="0.1.1" />
     <PackageReference Include="Unity" Version="5.8.6" />
   </ItemGroup>
 </Project>
