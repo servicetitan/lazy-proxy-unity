@@ -161,8 +161,8 @@ namespace LazyProxy.Unity.Tests
             _service2Id = string.Empty;
 
             var container = new UnityContainer()
-                .RegisterLazy<IService1, Service1>(() => new SingletonLifetimeManager())
-                .RegisterLazy<IService2, Service2>(() => new SingletonLifetimeManager());
+                .RegisterLazy<IService1, Service1>(() => new ContainerControlledLifetimeManager())
+                .RegisterLazy<IService2, Service2>(() => new ContainerControlledLifetimeManager());
 
             Assert.Empty(_service1Id);
             Assert.Empty(_service2Id);
