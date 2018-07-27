@@ -73,6 +73,12 @@ namespace LazyProxy.Unity
             params InjectionMember[] injectionMembers)
             where TTo : TFrom where TFrom : class
         {
+            // There is no way to constraint it on the compilation step.
+            if (!typeof(TFrom).IsInterface)
+            {
+                throw new NotSupportedException("The lazy registration is supported only for interfaces.");
+            }
+
             var lazyProxyType = LazyProxyBuilder.BuildLazyProxyType<TFrom>();
             var registrationName = Guid.NewGuid().ToString();
 

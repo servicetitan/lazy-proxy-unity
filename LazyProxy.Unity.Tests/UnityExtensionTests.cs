@@ -275,5 +275,11 @@ namespace LazyProxy.Unity.Tests
             Assert.Equal("service1->" + result1, actualResult1);
             Assert.Equal("service1->" + result2, actualResult2);
         }
+
+        [Fact]
+        public void RegistrationMustThrowAnExceptionForNonInterfaces()
+        {
+            Assert.Throws<NotSupportedException>(() => new UnityContainer().RegisterLazy<Service1, Service1>());
+        }
     }
 }
