@@ -12,6 +12,7 @@
     <RepositoryType>git</RepositoryType>
     <PackageTags>unity container lazy injection proxy dynamic runtime wrapper</PackageTags>
     <Description>Lazy injection for Unity container</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="LazyProxy" Version="0.1.0" />
