@@ -1,10 +1,13 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using Moq;
 using Unity;
 using Unity.Exceptions;
 using Unity.Injection;
 using Unity.Lifetime;
 using Xunit;
+
+[assembly: InternalsVisibleTo("LazyProxy.DynamicTypes")]
 
 namespace LazyProxy.Unity.Tests
 {
@@ -55,6 +58,16 @@ namespace LazyProxy.Unity.Tests
             }
 
             public string Method(string arg) => "service2->" + arg;
+        }
+
+        internal interface IInternalService
+        {
+            string Get();
+        }
+
+        internal class InternalService : IInternalService
+        {
+            public string Get() => "InternalService";
         }
 
         [Fact]
@@ -280,6 +293,17 @@ namespace LazyProxy.Unity.Tests
         public void RegistrationMustThrowAnExceptionForNonInterfaces()
         {
             Assert.Throws<NotSupportedException>(() => new UnityContainer().RegisterLazy<Service1, Service1>());
+        }
+
+        [Fact]
+        public void InternalsVisibleToAttributeMustAllowToResolveInternalServices()
+        {
+            var result = new UnityContainer()
+                .RegisterLazy<IInternalService, InternalService>()
+                .Resolve<IInternalService>()
+                .Get();
+
+            Assert.Equal("InternalService", result);
         }
     }
 }
