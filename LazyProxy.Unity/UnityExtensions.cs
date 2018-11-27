@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq.Expressions;
 using Unity;
 using Unity.Injection;
 using Unity.Lifetime;
@@ -6,6 +7,9 @@ using Unity.Registration;
 
 namespace LazyProxy.Unity
 {
+    /// <summary>
+    /// Extension methods for lazy registration.
+    /// </summary>
     public static class UnityExtensions
     {
         private static readonly Func<LifetimeManager> GetTransientLifetimeManager = () => new TransientLifetimeManager();
@@ -152,11 +156,26 @@ namespace LazyProxy.Unity
 
             return container
                 .RegisterType(typeFrom, typeTo, registrationName, getLifetimeManager(), injectionMembers)
-                .RegisterType(typeFrom, lazyProxyType, name,
-                    getLifetimeManager(),
-                    new InjectionConstructor(
-                        new ResolvedParameter(typeof(Lazy<>).MakeGenericType(typeFrom), registrationName))
-                );
+                .RegisterType(typeFrom, name, getLifetimeManager(), new InjectionFactory(
+                    (c, t, n) =>
+                    {
+                        var valueFactory = BuildValueFactory(c, t, registrationName);
+                        var lazy = Activator.CreateInstance(typeof(Lazy<>).MakeGenericType(t), valueFactory);
+
+                        var closedLazyProxyType = lazyProxyType.IsGenericTypeDefinition
+                            ? lazyProxyType.MakeGenericType(t.GenericTypeArguments)
+                            : lazyProxyType;
+
+                        return Activator.CreateInstance(closedLazyProxyType, lazy);
+                    }));
+        }
+
+        private static Delegate BuildValueFactory(IUnityContainer container, Type type, string name)
+        {
+            Expression<Func<object>> expression = () => container.Resolve(type, name);
+            var body = Expression.Convert(expression.Body, type);
+            var lambda = Expression.Lambda(typeof(Func<>).MakeGenericType(type), body);
+            return lambda.Compile();
         }
     }
 }
