@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Linq.Expressions;
 using Unity;
 using Unity.Injection;
@@ -13,6 +14,9 @@ namespace LazyProxy.Unity
     public static class UnityExtensions
     {
         private static readonly Func<LifetimeManager> GetTransientLifetimeManager = () => new TransientLifetimeManager();
+
+        private static readonly ConcurrentDictionary<(IUnityContainer container, Type type, string name), Lazy<Delegate>> ValueFactories
+                = new ConcurrentDictionary<(IUnityContainer container, Type type, string name), Lazy<Delegate>>();
 
         /// <summary>
         /// Is used to register interface TFrom to class TTo by creation a lazy proxy at runtime.
@@ -159,7 +163,7 @@ namespace LazyProxy.Unity
                 .RegisterType(typeFrom, name, getLifetimeManager(), new InjectionFactory(
                     (c, t, n) =>
                     {
-                        var valueFactory = BuildValueFactory(c, t, registrationName);
+                        var valueFactory = GetValueFactory(c, t, registrationName);
                         var lazy = Activator.CreateInstance(typeof(Lazy<>).MakeGenericType(t), valueFactory);
 
                         var closedLazyProxyType = lazyProxyType.IsGenericTypeDefinition
@@ -168,6 +172,14 @@ namespace LazyProxy.Unity
 
                         return Activator.CreateInstance(closedLazyProxyType, lazy);
                     }));
+        }
+
+        private static Delegate GetValueFactory(IUnityContainer container, Type type, string name)
+        {
+            var lazy = ValueFactories.GetOrAdd((container, type, name), tuple =>
+                new Lazy<Delegate>(() => BuildValueFactory(tuple.container, tuple.type, tuple.name)));
+
+            return lazy.Value;
         }
 
         private static Delegate BuildValueFactory(IUnityContainer container, Type type, string name)
