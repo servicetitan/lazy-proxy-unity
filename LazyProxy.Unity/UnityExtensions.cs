@@ -155,39 +155,12 @@ namespace LazyProxy.Unity
                 throw new NotSupportedException("The lazy registration is supported only for interfaces.");
             }
 
-            var lazyProxyType = LazyProxyBuilder.BuildLazyProxyType(typeFrom);
             var registrationName = Guid.NewGuid().ToString();
 
             return container
                 .RegisterType(typeFrom, typeTo, registrationName, getLifetimeManager(), injectionMembers)
                 .RegisterType(typeFrom, name, getLifetimeManager(), new InjectionFactory(
-                    (c, t, n) =>
-                    {
-                        var valueFactory = GetValueFactory(c, t, registrationName);
-                        var lazy = Activator.CreateInstance(typeof(Lazy<>).MakeGenericType(t), valueFactory);
-
-                        var closedLazyProxyType = lazyProxyType.IsGenericTypeDefinition
-                            ? lazyProxyType.MakeGenericType(t.GenericTypeArguments)
-                            : lazyProxyType;
-
-                        return Activator.CreateInstance(closedLazyProxyType, lazy);
-                    }));
-        }
-
-        private static Delegate GetValueFactory(IUnityContainer container, Type type, string name)
-        {
-            var lazy = ValueFactories.GetOrAdd((container, type, name), tuple =>
-                new Lazy<Delegate>(() => BuildValueFactory(tuple.container, tuple.type, tuple.name)));
-
-            return lazy.Value;
-        }
-
-        private static Delegate BuildValueFactory(IUnityContainer container, Type type, string name)
-        {
-            Expression<Func<object>> expression = () => container.Resolve(type, name);
-            var body = Expression.Convert(expression.Body, type);
-            var lambda = Expression.Lambda(typeof(Func<>).MakeGenericType(type), body);
-            return lambda.Compile();
+                    (c, t, n) => LazyProxyBuilder.CreateInstance(t, () => c.Resolve(t, registrationName))));
         }
     }
 }
