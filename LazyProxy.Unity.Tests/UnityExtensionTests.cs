@@ -70,6 +70,62 @@ namespace LazyProxy.Unity.Tests
             public string Get() => "InternalService";
         }
 
+        public interface IBaseArgument { }
+
+        public abstract class AnotherArgument
+        {
+            public string Value { get; set; }
+        }
+
+        public class Argument1A : IBaseArgument { }
+
+        public class Argument1B : IBaseArgument { }
+
+        public class Argument1C : IBaseArgument { }
+
+        public struct Argument2 { }
+
+        public class Argument3 : AnotherArgument, IBaseArgument { }
+
+        public interface IGenericService<T, in TIn, out TOut>
+            where T : class, IBaseArgument, new()
+            where TIn : struct
+            where TOut : AnotherArgument, IBaseArgument
+        {
+            TOut Get<TArg>(T arg1, TIn arg2, TArg arg3) where TArg : struct;
+        }
+
+        private class GenericService<T, TIn, TOut> : IGenericService<T, TIn, TOut>
+            where T : class, IBaseArgument, new()
+            where TIn : struct
+            where TOut : AnotherArgument, IBaseArgument, new()
+        {
+            protected virtual string Get() => "";
+
+            public TOut Get<TArg>(T arg1, TIn arg2, TArg arg3) where TArg : struct
+            {
+                return new TOut
+                {
+                    Value = $"{arg1.GetType().Name}_{arg2.GetType().Name}_{arg3.GetType().Name}{Get()}"
+                };
+            }
+        }
+
+        private class DerivedGenericService<T, TIn, TOut> : GenericService<T, TIn, TOut>
+            where T : class, IBaseArgument, new()
+            where TIn : struct
+            where TOut : AnotherArgument, IBaseArgument, new()
+        {
+            private readonly string _value;
+
+            protected override string Get() => $"_{_value}";
+
+            public DerivedGenericService(string value)
+            {
+                _value = value;
+            }
+        }
+
         [Fact]
         public void ServiceCtorMustBeExecutedAfterMethodIsCalledAndOnlyOnce()
         {
@@ -304,6 +360,132 @@ namespace LazyProxy.Unity.Tests
                 .Get();
 
             Assert.Equal("InternalService", result);
+        }
+
+        [Fact]
+        public void ClosedGenericServiceMustBeResolved()
+        {
+            var result = new UnityContainer()
+                .RegisterLazy(
+                    typeof(IGenericService<Argument1A, Argument2, Argument3>),
+                    typeof(GenericService<Argument1A, Argument2, Argument3>))
+                .Resolve<IGenericService<Argument1A, Argument2, Argument3>>()
+                .Get(new Argument1A(), new Argument2(), 42);
+
+            Assert.Equal("Argument1A_Argument2_Int32", result.Value);
+        }
+
+        [Fact]
+        public void OpenedGenericServiceMustBeResolved()
+        {
+            var result = new UnityContainer()
+                .RegisterLazy(typeof(IGenericService<,,>), typeof(GenericService<,,>))
+                .Resolve<IGenericService<Argument1A, Argument2, Argument3>>()
+                .Get(new Argument1A(), new Argument2(), 42);
+
+            Assert.Equal("Argument1A_Argument2_Int32", result.Value);
+        }
+
+        [Fact]
+        public void GenericServiceMustBeResolvedWithCorrectLifetime()
+        {
+            var container = new UnityContainer()
+                .RegisterLazy(
+                    typeof(IGenericService<,,>),
+                    typeof(GenericService<,,>),
+                    () => new TransientLifetimeManager())
+                .RegisterLazy(
+                    typeof(IGenericService<Argument1A, Argument2, Argument3>),
+                    typeof(GenericService<Argument1A, Argument2, Argument3>),
+                    () => new ContainerControlledLifetimeManager())
+                .RegisterLazy(
+                    typeof(IGenericService<Argument1B, Argument2, Argument3>),
+                    typeof(GenericService<Argument1B, Argument2, Argument3>),
+                    () => new HierarchicalLifetimeManager())
+                .RegisterLazy(
+                    typeof(IGenericService<Argument1C, Argument2, Argument3>),
+                    typeof(GenericService<Argument1C, Argument2, Argument3>),
+                    () => new TransientLifetimeManager());
+
+            var service1 = container.Resolve<IGenericService<Argument1A, Argument2, Argument3>>();
+            var service2 = container.Resolve<IGenericService<Argument1B, Argument2, Argument3>>();
+            var service3 = container.Resolve<IGenericService<Argument1C, Argument2, Argument3>>();
+
+            Assert.Same(service1, container.Resolve<IGenericService<Argument1A, Argument2, Argument3>>());
+            Assert.Same(service2, container.Resolve<IGenericService<Argument1B, Argument2, Argument3>>());
+            Assert.NotSame(service3, container.Resolve<IGenericService<Argument1C, Argument2, Argument3>>());
+
+            using (var childContainer = container.CreateChildContainer())
+            {
+                Assert.Same(service1, childContainer.Resolve<IGenericService<Argument1A, Argument2, Argument3>>());
+                Assert.NotSame(service2, childContainer.Resolve<IGenericService<Argument1B, Argument2, Argument3>>());
+                Assert.NotSame(service3, childContainer.Resolve<IGenericService<Argument1C, Argument2, Argument3>>());
+            }
+        }
+
+        [Fact]
+        public void GenericServicesMustBeResolvedByNameWithCorrectLifetime()
+        {
+            const string singleton = "singleton";
+            const string hierarchical = "hierarchical";
+            const string transient = "transient";
+
+            var container = new UnityContainer()
+                .RegisterLazy(
+                    typeof(IGenericService<,,>),
+                    typeof(GenericService<,,>),
+                    singleton,
+                    () => new ContainerControlledLifetimeManager())
+                .RegisterLazy(
+                    typeof(IGenericService<,,>),
+                    typeof(GenericService<,,>),
+                    hierarchical,
+                    () => new HierarchicalLifetimeManager())
+                .RegisterLazy(
+                    typeof(IGenericService<,,>),
+                    typeof(GenericService<,,>),
+                    transient,
+                    () => new TransientLifetimeManager());
+
+            var service1 = container.Resolve<IGenericService<Argument1A, Argument2, Argument3>>(singleton);
+            var service2 = container.Resolve<IGenericService<Argument1B, Argument2, Argument3>>(hierarchical);
+            var service3 = container.Resolve<IGenericService<Argument1C, Argument2, Argument3>>(transient);
+
+            Assert.Same(service1, container.Resolve<IGenericService<Argument1A, Argument2, Argument3>>(singleton));
+            Assert.Same(service2, container.Resolve<IGenericService<Argument1B, Argument2, Argument3>>(hierarchical));
+            Assert.NotSame(service3, container.Resolve<IGenericService<Argument1C, Argument2, Argument3>>(transient));
+
+            using (var childContainer = container.CreateChildContainer())
+            {
+                Assert.Same(service1, childContainer.Resolve<IGenericService<Argument1A, Argument2, Argument3>>(singleton));
+                Assert.NotSame(service2, childContainer.Resolve<IGenericService<Argument1B, Argument2, Argument3>>(hierarchical));
+                Assert.NotSame(service3, childContainer.Resolve<IGenericService<Argument1C, Argument2, Argument3>>(transient));
+            }
+        }
+
+        [Fact]
+        public void GenericServicesMustBeResolvedByNameWithCorrectInjectionMembers()
+        {
+            const string value1 = "value1";
+            const string value2 = "value2";
+
+            var container = new UnityContainer()
+                .RegisterLazy(
+                    typeof(IGenericService<,,>),
+                    typeof(DerivedGenericService<,,>),
+                    value1,
+                    new InjectionConstructor(value1))
+                .RegisterLazy(
+                    typeof(IGenericService<,,>),
+                    typeof(DerivedGenericService<,,>),
+                    value2,
+                    new InjectionConstructor(value2));
+
+            var service1 = container.Resolve<IGenericService<Argument1A, Argument2, Argument3>>(value1);
+            var service2 = container.Resolve<IGenericService<Argument1A, Argument2, Argument3>>(value2);
+
+            Assert.Equal($"Argument1A_Argument2_Int32_{value1}", service1.Get(new Argument1A(), new Argument2(), 42).Value);
+            Assert.Equal($"Argument1A_Argument2_Int32_{value2}", service2.Get(new Argument1A(), new Argument2(), 42).Value);
         }
     }
 }

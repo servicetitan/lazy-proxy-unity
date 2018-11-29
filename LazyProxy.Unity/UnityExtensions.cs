@@ -6,6 +6,9 @@ using Unity.Registration;
 
 namespace LazyProxy.Unity
 {
+    /// <summary>
+    /// Extension methods for lazy registration.
+    /// </summary>
     public static class UnityExtensions
     {
         private static readonly Func<LifetimeManager> GetTransientLifetimeManager = () => new TransientLifetimeManager();
@@ -147,16 +150,12 @@ namespace LazyProxy.Unity
                 throw new NotSupportedException("The lazy registration is supported only for interfaces.");
             }
 
-            var lazyProxyType = LazyProxyBuilder.BuildLazyProxyType(typeFrom);
             var registrationName = Guid.NewGuid().ToString();
 
             return container
                 .RegisterType(typeFrom, typeTo, registrationName, getLifetimeManager(), injectionMembers)
-                .RegisterType(typeFrom, lazyProxyType, name,
-                    getLifetimeManager(),
-                    new InjectionConstructor(
-                        new ResolvedParameter(typeof(Lazy<>).MakeGenericType(typeFrom), registrationName))
-                );
+                .RegisterType(typeFrom, name, getLifetimeManager(), new InjectionFactory(
+                    (c, t, n) => LazyProxyBuilder.CreateInstance(t, () => c.Resolve(t, registrationName))));
         }
     }
 }
