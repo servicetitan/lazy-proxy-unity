@@ -15,9 +15,6 @@ namespace LazyProxy.Unity
     {
         private static readonly Func<LifetimeManager> GetTransientLifetimeManager = () => new TransientLifetimeManager();
 
-        private static readonly ConcurrentDictionary<(IUnityContainer container, Type type, string name), Lazy<Delegate>> ValueFactories
-                = new ConcurrentDictionary<(IUnityContainer container, Type type, string name), Lazy<Delegate>>();
-
         /// <summary>
         /// Is used to register interface TFrom to class TTo by creation a lazy proxy at runtime.
         /// The real class To will be instantiated only after first method execution.
