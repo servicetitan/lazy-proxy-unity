@@ -5,7 +5,9 @@ using Unity;
 using Unity.Exceptions;
 using Unity.Injection;
 using Unity.Lifetime;
+using Unity.Resolution;
 using Xunit;
+using DependencyAttribute = Unity.Attributes.DependencyAttribute;
 
 [assembly: InternalsVisibleTo("LazyProxy.DynamicTypes")]
 
@@ -58,6 +60,11 @@ namespace LazyProxy.Unity.Tests
             }
 
             public string Method(string arg) => "service2->" + arg;
+        }
+
+        private class Service2Ex : IService2
+        {
+            public string Method(string arg) => "service2Ex->" + arg;
         }
 
         internal interface IInternalService
@@ -123,6 +130,47 @@ namespace LazyProxy.Unity.Tests
             public DerivedGenericService(string value)
             {
                 _value = value;
+            }
+        }
+
+        public class Argument
+        {
+            public string StringValue { get; }
+
+            public Argument(string stringValue)
+            {
+                StringValue = stringValue;
+            }
+        }
+
+        enum SomeEnum
+        {
+            Value1,
+            Value2
+        }
+
+        public interface IServiceToTestOverrides
+        {
+            string Property { get; set; }
+            string Get(string arg);
+        }
+
+        private class ServiceToTestOverrides : IServiceToTestOverrides
+        {
+            private readonly SomeEnum _someEnum;
+            private readonly IService2 _service;
+            private readonly Argument _argument;
+
+            [Dependency]
+            public string Property { get; set; }
+
+            public string Get(string arg) => $"{_someEnum}_{_service.Method(arg)}_{Property}_{_argument.StringValue}";
+
+            public ServiceToTestOverrides(SomeEnum someEnum, IService2 service, Argument argument)
+            {
+                _someEnum = someEnum;
+                _service = service;
+                _argument = argument;
             }
         }
 
@@ -486,6 +534,23 @@ namespace LazyProxy.Unity.Tests
 
             Assert.Equal($"Argument1A_Argument2_Int32_{value1}", service1.Get(new Argument1A(), new Argument2(), 42).Value);
             Assert.Equal($"Argument1A_Argument2_Int32_{value2}", service2.Get(new Argument1A(), new Argument2(), 42).Value);
+        }
+
+        [Fact]
+        public void OverridesMustBeAppliedByProxy()
+        {
+            var result = new UnityContainer()
+                .RegisterType<IService2, Service2>()
+                .RegisterLazy<IServiceToTestOverrides, ServiceToTestOverrides>()
+                .Resolve<IServiceToTestOverrides>(
+                    new ParameterOverride("someEnum", SomeEnum.Value2),
+                    new DependencyOverride(typeof(IService2), new Service2Ex()),
+                    new PropertyOverride("Property", "propertyValue"),
+                    new TypeBasedOverride(typeof(Argument), new ParameterOverride("stringValue", "stringValue"))
+                )
+                .Get("arg");
+
+            Assert.Equal("Value2_service2Ex->arg_propertyValue_stringValue", result);
         }
     }
 }
