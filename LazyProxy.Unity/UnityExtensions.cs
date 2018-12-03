@@ -1,6 +1,5 @@
 ﻿using System;
 using Unity;
-using Unity.Injection;
 using Unity.Lifetime;
 using Unity.Registration;
 
@@ -154,8 +153,8 @@ namespace LazyProxy.Unity
 
             return container
                 .RegisterType(typeFrom, typeTo, registrationName, getLifetimeManager(), injectionMembers)
-                .RegisterType(typeFrom, name, getLifetimeManager(), new InjectionFactory(
-                    (c, t, n) => LazyProxyBuilder.CreateInstance(t, () => c.Resolve(t, registrationName))));
+                .RegisterType(typeFrom, name, getLifetimeManager(), new UnityInjectionFactory(
+                    (c, t, n, o) => LazyProxyBuilder.CreateInstance(t, () => c.Resolve(t, registrationName, o))));
         }
     }
 }
