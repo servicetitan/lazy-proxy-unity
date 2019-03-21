@@ -1,7 +1,7 @@
 ﻿using System;
 using Unity;
+using Unity.Injection;
 using Unity.Lifetime;
-using Unity.Registration;
 
 namespace LazyProxy.Unity
 {
@@ -10,7 +10,8 @@ namespace LazyProxy.Unity
     /// </summary>
     public static class UnityExtensions
     {
-        private static readonly Func<LifetimeManager> GetTransientLifetimeManager = () => new TransientLifetimeManager();
+        private static readonly Func<ITypeLifetimeManager> GetTransientLifetimeManager =
+            () => new TransientLifetimeManager();
 
         /// <summary>
         /// Is used to register interface TFrom to class TTo by creation a lazy proxy at runtime.
@@ -53,7 +54,7 @@ namespace LazyProxy.Unity
         /// <typeparam name="TTo">The binded class.</typeparam>
         /// <returns>The instance of Unity container.</returns>
         public static IUnityContainer RegisterLazy<TFrom, TTo>(this IUnityContainer container,
-            Func<LifetimeManager> getLifetimeManager,
+            Func<ITypeLifetimeManager> getLifetimeManager,
             params InjectionMember[] injectionMembers)
             where TTo : TFrom where TFrom : class =>
             container.RegisterLazy<TFrom, TTo>(null, getLifetimeManager, injectionMembers);
@@ -71,7 +72,7 @@ namespace LazyProxy.Unity
         /// <returns>The instance of Unity container.</returns>
         public static IUnityContainer RegisterLazy<TFrom, TTo>(this IUnityContainer container,
             string name,
-            Func<LifetimeManager> getLifetimeManager,
+            Func<ITypeLifetimeManager> getLifetimeManager,
             params InjectionMember[] injectionMembers)
             where TTo : TFrom where TFrom : class =>
             container.RegisterLazy(typeof(TFrom), typeof(TTo), name, getLifetimeManager, injectionMembers);
@@ -121,7 +122,7 @@ namespace LazyProxy.Unity
         public static IUnityContainer RegisterLazy(this IUnityContainer container,
             Type typeFrom,
             Type typeTo,
-            Func<LifetimeManager> getLifetimeManager,
+            Func<ITypeLifetimeManager> getLifetimeManager,
             params InjectionMember[] injectionMembers) =>
             container.RegisterLazy(typeFrom, typeTo, null, getLifetimeManager, injectionMembers);
 
@@ -140,7 +141,7 @@ namespace LazyProxy.Unity
             Type typeFrom,
             Type typeTo,
             string name,
-            Func<LifetimeManager> getLifetimeManager,
+            Func<ITypeLifetimeManager> getLifetimeManager,
             params InjectionMember[] injectionMembers)
         {
             // There is no way to constraint it on the compilation step.
@@ -149,12 +150,9 @@ namespace LazyProxy.Unity
                 throw new NotSupportedException("The lazy registration is supported only for interfaces.");
             }
 
-            var registrationName = Guid.NewGuid().ToString();
-
-            return container
-                .RegisterType(typeFrom, typeTo, registrationName, getLifetimeManager(), injectionMembers)
-                .RegisterType(typeFrom, name, getLifetimeManager(), new UnityInjectionFactory(
-                    (c, t, n, o) => LazyProxyBuilder.CreateInstance(t, () => c.Resolve(t, registrationName, o))));
+            return container.AddExtension(
+                new LazyProxyUnityExtension(typeFrom, typeTo, name, getLifetimeManager, injectionMembers)
+            );
         }
     }
 }

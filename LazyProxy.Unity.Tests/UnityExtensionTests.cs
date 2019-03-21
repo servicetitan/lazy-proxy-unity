@@ -2,12 +2,11 @@
 using System.Runtime.CompilerServices;
 using Moq;
 using Unity;
-using Unity.Exceptions;
 using Unity.Injection;
 using Unity.Lifetime;
 using Unity.Resolution;
 using Xunit;
-using DependencyAttribute = Unity.Attributes.DependencyAttribute;
+using DependencyAttribute = Unity.DependencyAttribute;
 
 [assembly: InternalsVisibleTo("LazyProxy.DynamicTypes")]
 
