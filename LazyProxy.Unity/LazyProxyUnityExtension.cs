@@ -34,9 +34,9 @@ namespace LazyProxy.Unity
             params InjectionMember[] injectionMembers)
         {
             _typeFrom = typeFrom ?? throw new ArgumentNullException(nameof(typeFrom));
-            _typeTo = typeTo ?? throw new ArgumentNullException(nameof(typeTo));;
+            _typeTo = typeTo ?? throw new ArgumentNullException(nameof(typeTo));
             _name = name;
-            _getLifetimeManager = getLifetimeManager ?? throw new ArgumentNullException(nameof(getLifetimeManager));;
+            _getLifetimeManager = getLifetimeManager ?? throw new ArgumentNullException(nameof(getLifetimeManager));
             _injectionMembers = injectionMembers;
         }
 
