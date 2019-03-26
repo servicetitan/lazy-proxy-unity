@@ -150,6 +150,39 @@ namespace LazyProxy.Unity
                 throw new NotSupportedException("The lazy registration is supported only for interfaces.");
             }
 
+//          Note #1
+//          -------
+//          If UnityContainer has the correct overload of the '.RegisterFactory' method we can make it easier:
+//
+//          var registrationName = Guid.NewGuid().ToString();
+//          return container
+//              .RegisterType(typeFrom, typeTo, registrationName, getLifetimeManager(), injectionMembers)
+//              .RegisterFactory(typeFrom, name,
+//                  (c, t, n, o) => LazyProxyBuilder.CreateInstance(t, () => c.Resolve(t, registrationName, o)),
+//                  getLifetimeManager());
+//
+//          We opened an issue on GitHub and suggested pull requests to introduce the overload:
+//              - https://github.com/unitycontainer/container/issues/147
+//              - https://github.com/unitycontainer/abstractions/pull/98
+//              - https://github.com/unitycontainer/container/pull/148
+//
+//          But unfortunately the issue and pull requests were rejected for reasons not entirely clear.
+//          That is why we have to use extension.
+//
+//          Note #2
+//          -------
+//          We have to use an extension per type because UnityContainer has weird behaviour when work with
+//          open generic types therefore we can't use fake interface to avoid multiple extensions:
+//
+//          public interface ILazyProxy<T> {}
+//
+//          ...then register types like this:
+//          container.Register(_typeFrom, _typeTo,  "LazyProxyImpl" + _name);
+//          container.Register(_typeFrom, typeof(ILazyProxy<>).MakeGenericType(_typeFrom), _name);
+//
+//          ...and use single extension per container:
+//          context.Policy.Set(typeof(ILazyProxy<>), ...)
+
             return container.AddExtension(
                 new LazyProxyUnityExtension(typeFrom, typeTo, name, getLifetimeManager, injectionMembers)
             );
