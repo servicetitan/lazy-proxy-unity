@@ -5,7 +5,7 @@
     <PackageId>LazyProxy.Unity</PackageId>
     <Company>ServiceTitan, Inc.</Company>
     <Authors>ServiceTitan, Inc.</Authors>
-    <Copyright>Copyright 2018 ServiceTitan, Inc.</Copyright>
+    <Copyright>Copyright ServiceTitan, Inc.</Copyright>
     <PackageProjectUrl>https://github.com/servicetitan/lazy-proxy-unity</PackageProjectUrl>
     <PackageLicenseUrl>https://github.com/servicetitan/lazy-proxy-unity/blob/master/LICENSE</PackageLicenseUrl>
     <RepositoryUrl>https://github.com/servicetitan/lazy-proxy-unity</RepositoryUrl>
@@ -15,7 +15,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="LazyProxy" Version="0.1.4" />
+    <PackageReference Include="LazyProxy" Version="0.1.5" />
     <PackageReference Include="Unity" Version="5.10.2" />
   </ItemGroup>
 </Project>
