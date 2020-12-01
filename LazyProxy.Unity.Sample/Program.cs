@@ -19,10 +19,10 @@ namespace LazyProxy.Unity.Sample
             var container = new UnityContainer()
                 .RegisterLazy<IMyService, MyService>();
 
-            Console.WriteLine("Resolving service...");
+            Console.WriteLine("Resolving the service...");
             var service = container.Resolve<IMyService>();
 
-            Console.WriteLine("Foo execution...");
+            Console.WriteLine("Executing the 'Foo' method...");
             service.Foo();
         }
 

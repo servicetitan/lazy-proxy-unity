@@ -1,35 +1,62 @@
-# Lazy injection for Unity container
+# Lazy Dependency Injection for Unity Container
 
-A [LazyProxy](https://github.com/servicetitan/lazy-proxy) can be used for IoC containers to change the resolving behaviour.
+A [LazyProxy](https://github.com/servicetitan/lazy-proxy) can be used for IoC containers to improve performance by changing the resolve behavior.
 
-Dependencies registered as lazy are created as dynamic proxy objects built in real time, but the real classes are resolved only after the first execution of proxy method or property.
+More info can be found in the article about [Lazy Dependency Injection for .NET](https://dev.to/hypercodeplace/lazy-dependency-injection-37en).
 
-Also dynamic lazy proxy allows injection of circular dependencies.
+## Get Packages
 
-```C#
-var container = new UnityContainer().RegisterLazy<IMyService, MyService>();
-
-Console.WriteLine("Resolving service...");
-var service = container.Resolve<IMyService>();
-
-Console.WriteLine("Foo execution...");
-service.Foo();
-
-// Resolving service...
-// Foo execution...
-// Hello from ctor
-// Hello from Foo
+The library provides in NuGet.
 
 ```
+Install-Package LazyProxy.Unity
+```
 
-The following is supported:
+## Get Started
+
+Consider the following service:
+
+```CSharp
+public interface IMyService
+{
+    void Foo();
+}
+
+public class MyService : IMyService
+{
+    public MyService() => Console.WriteLine("Ctor");
+    public void Foo() => Console.WriteLine("Foo");
+}
+```
+
+A lazy registration for this service can be added like this:
+
+```CSharp
+var container = new UnityContainer().RegisterLazy<IMyService, MyService>();
+
+Console.WriteLine("Resolving the service...");
+var service = container.Resolve<IMyService>();
+
+Console.WriteLine("Executing the 'Foo' method...");
+service.Foo();
+```
+
+The output for this example:
+
+```
+Resolving the service...
+Executing the 'Foo' method...
+Ctor
+Foo
+```
+
+## Features
+
+Currently, `LazyProxy.Unity` supports the following:
 - Registration of types by interfaces;
 - Passing lifetime managers;
 - Passing injection members;
 - Resolving by child containers.
-
-**Not supported yet:**
-- Registration of instances.
 
 ## Performance
 
