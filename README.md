@@ -32,7 +32,11 @@ public class MyService : IMyService
 A lazy registration for this service can be added like this:
 
 ```CSharp
-var container = new UnityContainer().RegisterLazy<IMyService, MyService>();
+// Creating a container
+var container = new UnityContainer();
+
+// Adding a lazy registration
+container.RegisterLazy<IMyService, MyService>();
 
 Console.WriteLine("Resolving the service...");
 var service = container.Resolve<IMyService>();
