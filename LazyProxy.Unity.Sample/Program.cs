@@ -17,7 +17,7 @@ namespace LazyProxy.Unity.Sample
         private static void UnityExtensionExample1()
         {
             // Creating a container
-            var container = new UnityContainer();
+            using var container = new UnityContainer();
 
             // Adding a lazy registration
             container.RegisterLazy<IMyService, MyService>();
