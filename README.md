@@ -33,7 +33,7 @@ A lazy registration for this service can be added like this:
 
 ```CSharp
 // Creating a container
-var container = new UnityContainer();
+using var container = new UnityContainer();
 
 // Adding a lazy registration
 container.RegisterLazy<IMyService, MyService>();
