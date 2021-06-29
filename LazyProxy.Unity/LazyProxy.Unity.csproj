@@ -15,7 +15,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="LazyProxy" Version="1.0.1" />
+    <PackageReference Include="LazyProxy" Version="1.0.2" />
     <PackageReference Include="Unity.Container" Version="5.10.2" />
   </ItemGroup>
 </Project>
